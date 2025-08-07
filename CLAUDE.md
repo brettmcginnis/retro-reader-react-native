@@ -1,7 +1,7 @@
 # Retro Reader - Project Context for Claude
 
 ## Project Overview
-Retro Reader is a React Native application designed for reading retro game guides, particularly from sources like GameFAQs for consoles like Super Nintendo. The app focuses on providing an optimal reading experience for ASCII-based guides that are typically 10,000+ lines long with ~90 character width formatting.
+Retro Reader is a React Native application designed for reading retro game guides, particularly from sources like GameFAQs for consoles like Super Nintendo. The app focuses on providing an optimal reading experience for ASCII-based guides.
 
 This project also serves as a demonstration of mobile CI/CD best practices, emphasizing curated commits, code decoupling, and comprehensive testing.
 
@@ -15,11 +15,12 @@ This project also serves as a demonstration of mobile CI/CD best practices, emph
 
 ### Technology Stack
 - **Framework**: React Native with TypeScript
-- **State Management**: Redux Toolkit or Zustand (functional approach)
+- **State Management**: Zustand (functional approach, lightweight)
 - **Navigation**: React Navigation
 - **Storage**: AsyncStorage for local data, SQLite for guide content
-- **Testing**: Jest (unit), Detox or Maestro (UI)
+- **Testing**: Jest (unit), Maestro (UI)
 - **Linting**: ESLint with strict configuration
+- **Code Formatting**: Prettier for consistent formatting
 - **CI/CD**: GitHub Actions for both iOS and Android
 
 ## Code Standards
@@ -36,11 +37,12 @@ This project also serves as a demonstration of mobile CI/CD best practices, emph
 ```
 src/
 ├── domain/           # Business logic interfaces
-├── infrastructure/   # External service implementations
+│   ├── guide.ts
+│   └── guide.test.ts # Test files co-located with source
+├── infrastructure/   # External service implementations  
 ├── presentation/     # UI components and screens
 ├── application/      # Use cases and orchestration
-├── shared/          # Shared utilities and types
-└── tests/           # Test files mirroring src structure
+└── shared/          # Shared utilities and types
 ```
 
 ### Testing Requirements
@@ -49,32 +51,42 @@ src/
 - UI tests for critical user journeys
 - No skipped or commented tests allowed
 - Test files should be highly readable with clear descriptions
+- Test files co-located with source files (*.test.ts, *.spec.ts)
 
 ## CI/CD Pipeline
 
 ### Build Requirements
 1. **Linting**: Must pass strict ESLint rules
-2. **Type Checking**: TypeScript compilation with strict mode
-3. **Unit Tests**: 100% pass rate required
-4. **UI Tests**: Critical path coverage
-5. **Build Artifacts**: 
+2. **Code Formatting**: Prettier check must pass
+3. **Type Checking**: TypeScript compilation with strict mode
+4. **Unit Tests**: 100% pass rate required
+5. **UI Tests**: Critical path coverage with Maestro
+6. **Build Artifacts**: 
    - iOS: Built via GitHub Actions free tier
    - Android: Built via GitHub Actions using custom Docker image with Android SDK
 
-### Docker Image for Android Builds
-The project includes a Dockerfile that creates an image with:
-- Android SDK
-- Required build tools
-- React Native dependencies
+### Docker-in-Docker Architecture for Android Builds
+The project uses a Docker-in-Docker (DinD) approach with two separate images:
+
+**1. Android SDK Image:**
+- Android SDK only
+- Build tools and platform tools
+- Minimal footprint for SDK operations
+
+**2. React/Node Image:**
 - Node.js environment
+- React Native dependencies  
+- Build toolchain
+
+The GitHub Action uses DinD as the entry container, allowing artifacts built by the Node image to be available to the Android image for final APK generation.
 
 ## Feature Implementation Guidelines
 
 ### Guide Storage System
 - Guides stored as structured data (not raw text)
-- Support for metadata (title, system, author, version)
+- Support for metadata (title, game, system, author)
 - Efficient indexing for large documents
-- Import/export in multiple formats
+- Import/export json
 
 ### Reading Experience
 - Monospace font rendering for ASCII art preservation
@@ -85,7 +97,7 @@ The project includes a Dockerfile that creates an image with:
 
 ### Screen Adaptation
 - Support for multiple screen configurations
-- Special handling for foldable devices
+- Special handling multiple viewports (eg foldable phones, orientation)
 - Orientation-specific settings
 - Font size preferences per screen type
 
@@ -100,17 +112,9 @@ The project includes a Dockerfile that creates an image with:
 ## Development Workflow
 
 ### Commit Standards
-- Conventional commits format (feat:, fix:, docs:, etc.)
 - Atomic commits (one logical change per commit)
 - Comprehensive commit messages
-- No WIP commits in main branch
-
-### Branch Strategy
-- `main`: Production-ready code
-- `develop`: Integration branch
-- `feature/*`: Feature development
-- `fix/*`: Bug fixes
-- `release/*`: Release preparation
+- No WIP commits
 
 ### Pull Request Requirements
 - All CI checks must pass
@@ -128,39 +132,18 @@ npm run android       # Run Android app
 npm run test          # Run unit tests
 npm run test:watch    # Run tests in watch mode
 npm run lint          # Run ESLint
+npm run format        # Run Prettier
+npm run format:check  # Check Prettier formatting
 npm run typecheck     # Run TypeScript compiler
 npm run test:e2e:ios  # Run iOS UI tests
 npm run test:e2e:android # Run Android UI tests
 ```
 
-### Build
+### Release
 ```bash
-npm run build:ios     # Build iOS release
-npm run build:android # Build Android release
+npm run release:ios     # Build iOS release
+npm run release:android # Build Android release
 ```
-
-## Current Development Focus
-
-### Phase 1: Infrastructure Setup
-- Initialize React Native project with TypeScript
-- Configure development environment
-- Setup CI/CD pipeline
-- Implement core architecture patterns
-
-### Phase 2: Core Features
-- Guide storage and management
-- Basic reader implementation
-- Bookmark system
-
-### Phase 3: Advanced Features
-- Collections/folders
-- Import/export functionality
-- Multi-screen support
-
-### Phase 4: Polish
-- Performance optimization
-- Accessibility features
-- UI/UX refinements
 
 ## Known Constraints
 - Large guide files (10k+ lines) require efficient rendering
@@ -178,7 +161,7 @@ npm run build:android # Build Android release
 5. Switch between screen configurations
 
 ### Performance Benchmarks
-- Guide load time < 2 seconds
+- Guide load time < 1 seconds
 - Smooth scrolling at 60 FPS
 - Memory usage < 100MB for typical guide
 - Battery efficient for long reading sessions
@@ -204,8 +187,9 @@ npm run build:android # Build Android release
 - Reduce code review overhead
 
 ## Future Considerations
-- Cloud sync capabilities
+- Sync capabilities
 - Social features (sharing bookmarks)
 - Guide annotations
 - Theme customization beyond font size
 - Tablet-optimized layouts
+- Table of Contents detection and bookmark generation
